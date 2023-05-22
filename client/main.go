@@ -25,8 +25,8 @@ func receiveHandler(connection *websocket.Conn) {
 }
 
 func main() {
-	done := make(chan interface{})
-	interrupt := make(chan os.Signal)
+	done = make(chan interface{})
+	interrupt = make(chan os.Signal)
 	signal.Notify(interrupt, os.Interrupt)
 	socketUrl := "ws://localhost:8080/socket"
 	conn, _, err := websocket.DefaultDialer.Dial(socketUrl, nil)
