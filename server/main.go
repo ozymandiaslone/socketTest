@@ -24,6 +24,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			break
 		}
+		// Writes the same message back, with the same messageType
 		log.Printf("Message received: %s", msg)
 		if err := conn.WriteMessage(messageType, msg); err != nil {
 			log.Println(err)

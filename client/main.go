@@ -17,10 +17,29 @@ func receiveHandler(connection *websocket.Conn) {
 	for {
 		_, message, err := connection.ReadMessage()
 		if err != nil {
-			log.Println(err)
+			log.Println("Conn error: ", err)
+			log.Println("Unable to read from socket. Returning receiveHandler()...")
 			return
 		}
 		log.Printf("Received: %s", message)
+	}
+}
+
+func socketLoop(connection *websocket.Conn) {
+	defer connection.Close()
+	for {
+		select {
+		case <-time.After(15 * time.Millisecond):
+			connection.WriteMessage(websocket.TextMessage, []byte("Test websocket message..."))
+		case <-interrupt:
+			log.Println("Interrupt detected. Terminating connection and program...")
+			// The code to cose a websocket connection normally is fucked, so there's no way I can just remember it
+			if err := connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
+				log.Println("Error closing socket:", err)
+				return
+			}
+			return
+		}
 	}
 }
 
@@ -33,29 +52,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	go socketLoop(conn)
 	go receiveHandler(conn)
 
-	for {
-		select {
-		case <-time.After(10 * time.Millisecond):
-			if err := conn.WriteMessage(websocket.TextMessage, []byte("THIS IS A TEST SOCKET BITCH")); err != nil {
-				log.Println("Error writing message to socket:", err)
-			}
-		case <-interrupt:
-			log.Println("Interrupt detected, terminating.")
-			if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
-				log.Println("Error closing socket:", err)
-				return
-			}
-			select {
-			case <-done:
-				log.Println("Done")
-			case <-time.After(1 * time.Second):
-				log.Println("Timeout. Failure. Closing.")
-			}
-			return
-		}
-	}
+	<-done // just waits for the channel to populate i think
+	log.Println("Done.")
 
 }
